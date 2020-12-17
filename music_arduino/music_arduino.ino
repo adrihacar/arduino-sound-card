@@ -23,6 +23,7 @@
 
 unsigned char buffer[BUF_SIZE];
 unsigned long timeOrig;
+int playback = 1;
 
 /**********************************************************
  * Function: receiveEvent
@@ -48,22 +49,36 @@ void requestEvent()
  *********************************************************/
 void play_bit() 
 {
-  static int bitwise = 1;
-  static unsigned char data = 0;
-  static int music_count = 0;
+  if(playback == 1){
+    static int bitwise = 1;
+    static unsigned char data = 0;
+    static int music_count = 0;
 
-    bitwise = (bitwise * 2);
-    if (bitwise > 128) {
-        bitwise = 1;
-        #ifdef RASPBERRYPI 
-          data = buffer[music_count];
-          music_count = (music_count + 1) % BUF_SIZE;
-        #else 
-          data = pgm_read_byte_near(music + music_count);
-          music_count = (music_count + 1) % MUSIC_LEN;
-        #endif
-    }
-    digitalWrite(SOUND_PIN, (data & bitwise) );
+      bitwise = (bitwise * 2);
+      if (bitwise > 128) {
+          bitwise = 1;
+          #ifdef RASPBERRYPI 
+            data = buffer[music_count];
+            music_count = (music_count + 1) % BUF_SIZE;
+          #else 
+            data = pgm_read_byte_near(music + music_count);
+            music_count = (music_count + 1) % MUSIC_LEN;
+          #endif
+      }
+      digitalWrite(SOUND_PIN, (data & bitwise) );
+   }
+}
+
+/**********************************************************
+ * Function: check if we have to mute
+ *********************************************************/
+int isMute(){
+  int value = digitalRead(7);
+  if(value == 0){
+    playback = 0;
+  } else if(value == 1){
+    playback = 1;
+  }
 }
 
 /**********************************************************
@@ -93,6 +108,8 @@ void loop ()
     unsigned long timeDiff;
 
     play_bit();
+    isMute();
+
     timeDiff = SAMPLE_TIME - (micros() - timeOrig);
     timeOrig = timeOrig + SAMPLE_TIME;
     delayMicroseconds(timeDiff);
