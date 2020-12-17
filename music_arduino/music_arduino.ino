@@ -70,7 +70,7 @@ void play_bit()
 }
 
 /**********************************************************
- * Function: check if we have to mute
+ * Function: check if we have to mute 
  *********************************************************/
 int isMute(){
   int value = digitalRead(7);
@@ -79,6 +79,14 @@ int isMute(){
   } else if(value == 1){
     playback = 1;
   }
+  return 1;
+}
+
+/**********************************************************
+ * Function: check if we have to turn on the led 
+ *********************************************************/
+int turnOnLed(){
+  digitalWrite(13, (1-playback));
 }
 
 /**********************************************************
@@ -107,8 +115,9 @@ void loop ()
 {
     unsigned long timeDiff;
 
-    play_bit();
     isMute();
+    turnOnLed();
+    play_bit();
 
     timeDiff = SAMPLE_TIME - (micros() - timeOrig);
     timeOrig = timeOrig + SAMPLE_TIME;
