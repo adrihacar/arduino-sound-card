@@ -49,24 +49,24 @@ void requestEvent()
  *********************************************************/
 void play_bit() 
 {
+  static int bitwise = 1;
+  static unsigned char data = 0;
+  static int music_count = 0;
+  
+  bitwise = (bitwise * 2);
+  if (bitwise > 128) {
+      bitwise = 1;
+      #ifdef RASPBERRYPI 
+        data = buffer[music_count];
+        music_count = (music_count + 1) % BUF_SIZE;
+      #else 
+        data = pgm_read_byte_near(music + music_count);
+        music_count = (music_count + 1) % MUSIC_LEN;
+      #endif
+  }
   if(playback == 1){
-    static int bitwise = 1;
-    static unsigned char data = 0;
-    static int music_count = 0;
-
-      bitwise = (bitwise * 2);
-      if (bitwise > 128) {
-          bitwise = 1;
-          #ifdef RASPBERRYPI 
-            data = buffer[music_count];
-            music_count = (music_count + 1) % BUF_SIZE;
-          #else 
-            data = pgm_read_byte_near(music + music_count);
-            music_count = (music_count + 1) % MUSIC_LEN;
-          #endif
-      }
-      digitalWrite(SOUND_PIN, (data & bitwise) );
-   }
+    digitalWrite(SOUND_PIN, (data & bitwise) );
+  }
 }
 
 /**********************************************************
