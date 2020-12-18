@@ -74,11 +74,7 @@ void play_bit()
  *********************************************************/
 int isMute(){
   int value = digitalRead(7);
-  if(value == 0){
-    playback = 0;
-  } else if(value == 1){
-    playback = 1;
-  }
+  playback = 1 - value;
   return 1;
 }
 
