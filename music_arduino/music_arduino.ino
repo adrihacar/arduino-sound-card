@@ -24,6 +24,7 @@
 unsigned char buffer[BUF_SIZE];
 unsigned long timeOrig;
 int playback = 1;
+int pushed = 0;
 
 /**********************************************************
  * Function: receiveEvent
@@ -73,9 +74,21 @@ void play_bit()
  * Function: check if we have to mute 
  *********************************************************/
 int isMute(){
-  int value = digitalRead(7);
-  playback = 1 - value;
-  return 1;
+
+  int value = 0;
+  value = digitalRead(7); 
+  if(value == 1 && pushed == 0) {
+    pushed  = 1;
+  }
+  else if(pushed == 1 && value == 0){
+     pushed = 0;
+     if(playback == 0){
+       playback = 1;
+     } else if (playback == 1){
+       playback = 0;
+     }
+  }
+  return 0;
 }
 
 /**********************************************************
@@ -83,6 +96,7 @@ int isMute(){
  *********************************************************/
 int turnOnLed(){
   digitalWrite(13, (1-playback));
+  return 0;
 }
 
 /**********************************************************
