@@ -60,6 +60,7 @@ extern int _binary_tarfile_start;
 extern int _binary_tarfile_size;
 
 int isPlay = 1;
+int change = 0;
 
 /**********************************************************
  * Function: diffTime
@@ -126,6 +127,7 @@ void * task1 ()
 
 	clock_gettime(CLOCK_REALTIME,&start);
 	while (1) {
+		if(isPlay == 1){
 			// read from music file
 			//printf("read %s file\n",FILE_NAME);
 			ret=read(fd_file,buf,SEND_SIZE);
@@ -149,6 +151,7 @@ void * task1 ()
 				exit(-1);
 			}
 	#endif
+		}
 
 			// get end time, calculate lapso and sleep
 		    clock_gettime(CLOCK_REALTIME,&end);
@@ -180,13 +183,21 @@ void * task2 ()
     char play = '1';
     char stop = '0';
 
-    if(isPlay == 1){
-    	while (0 >= scanf("%c", &stop));
-    	isPlay = 0;
-    } else if (isPlay == 0){
-    	while (0 >= scanf("%c", &play));
-    	isPlay = 1;
+    while(isPlay == 1){
+    	char c = getchar( );
+    	if (0 != strcmp(c, stop)){
+    		isPlay = 0;
+    		change = 1;
+    	}
     }
+    while (isPlay == 0){
+    	char c = getchar( );
+    	if (0 != strcmp(c, play)){
+    		isPlay = 1;
+    		change = 1;
+    	}
+    }
+
   }
   clock_gettime(CLOCK_REALTIME, &end);
   diffTime(cycle, diff, &diff);
@@ -197,6 +208,39 @@ void * task2 ()
   diffTime(cycle, diff, &diff);
   nanosleep(&diff, NULL);
   addime(start, cycle, &start);
+}
+
+/*****************************************************************************
+ * Function: task3()
+ *****************************************************************************/
+void * task3 ()
+{
+   struct timespec start,end,diff,cycle;
+  // loading cycle time
+  cycle.tv_sec=PERIOD_TASK_2_SEC;
+  cycle.tv_nsec=PERIOD_TASK_2_NSEC;
+
+  clock_gettime(CLOCK_REALTIME,&start);
+
+  while(1){
+	  if(change == 1){
+		  if(isPlay == 0){
+			  printf("STOPPED");
+		  } else if (isPlay == 1){
+			  printf("PLAY");
+		  }
+		  change = 0;
+	  }
+  }
+    clock_gettime(CLOCK_REALTIME, &end);
+    diffTime(cycle, diff, &diff);
+    if (0 >= compTime(cycle, diff)){
+      printf("ERROR: lasted long than the cycle\n");
+      exit(-1);
+    }
+    diffTime(cycle, diff, &diff);
+    nanosleep(&diff, NULL);
+    addime(start, cycle, &start);
 }
 
 
@@ -253,12 +297,17 @@ rtems_task Init (rtems_task_argument ignored)
 		exit(-1);
 	}
 
-	pthread_t tid;
+	pthread_t task_1, task_2, task_3;
+
+	pthread_create(&task_1, NULL , task1, NULL);
+	pthread_create(&task_2, NULL, task2, NULL);
+
+	pthread_setschedparam(task_1, SCHED_FIFO, 20);
+	pthread_setschedparam(task_2, SCHED_FIFO, 10);
 
 	while (1) {
-		pthread_create(&tid, NULL, task1, NULL);
-		pthread_join(tid, NULL);
-
+		pthread_join(task_1, NULL);
+		pthread_join(task_2, NULL);
 	}
 	exit(0);
 
