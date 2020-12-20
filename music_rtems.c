@@ -41,7 +41,7 @@
 #define SEND_SIZE 256    			/* BYTES */
 
 #define TARFILE_START _binary_tarfile_start
-#define TARFILE_SIZE _binary_tarfile_size
+#define TARFILE_SIZE  _binary_tarfile_size
 
 #define SLAVE_ADDR 0x8
 
@@ -50,17 +50,18 @@
  *********************************************************/
 struct timespec time_msg = {0,1000000};
 
+unsigned char zeros_buf[SEND_SIZE] = { 0 };
+
 unsigned char buf[SEND_SIZE];
-    int fd_file = -1;
-    int fd_serie = -1;
-    int ret = 1;
+int fd_file = -1;
+int fd_serie = -1;
+int ret = 1;
 
 
 extern int _binary_tarfile_start;
 extern int _binary_tarfile_size;
 
 int isPlay = 1;
-int change = 0;
 
 /**********************************************************
  * Function: diffTime
@@ -127,15 +128,27 @@ void * task1 ()
 
 	clock_gettime(CLOCK_REALTIME,&start);
 	while (1) {
+
+		if(ret < 256){
+			fd_file = open (FILE_NAME, O_RDONLY);
+			if (fd_file < 0) {
+				perror("open: error opening file \n");
+			exit(-1);
+			}
+		}
+
+		// read from music file
+		//printf("read %s file\n",FILE_NAME);
 		if(isPlay == 1){
-			// read from music file
-			//printf("read %s file\n",FILE_NAME);
 			ret=read(fd_file,buf,SEND_SIZE);
+			printf("READ: %d\n",ret);
+		}
+
 			if (ret < 0) {
 				printf("read: error reading file\n");
 				exit(-1);
 			}
-			//printf("write %s file %d\n",DEV_NAME, SIZE);
+//			printf("write %s file %d\n",DEV_NAME, ret);
 	#ifdef RASPBERRYPI
 			for (int i=0; i<8; i++) {
 				ret=write(fd_serie,buf,SEND_SIZE/8);
@@ -145,21 +158,27 @@ void * task1 ()
 				}
 			}
 	#else
-			ret=write(fd_serie,buf,SEND_SIZE);
+			if(isPlay == 1){
+				ret=write(fd_serie,buf,SEND_SIZE);
+			} else {
+				ret=write(fd_serie,zeros_buf,SEND_SIZE);
+			}
+			printf("WRITE: %d\n",ret);
 			if (ret < 0) {
 				printf("write: error writting serial\n");
 				exit(-1);
 			}
 	#endif
-		}
 
 			// get end time, calculate lapso and sleep
 		    clock_gettime(CLOCK_REALTIME,&end);
 		    diffTime(end,start,&diff);
-		    if (0 >= compTime(cycle,diff)) {
-				printf("ERROR: lasted long than the cycle\n");
-				exit(-1);
-		    }
+		    diff.tv_sec = diff.tv_sec % PERIOD_TASK_1_NSEC;
+
+//		    if (0 >= compTime(cycle,diff)) {
+//				printf("ERROR: lasted long than the cycle\n");
+//				exit(-1);
+//		    }
 		    diffTime(cycle,diff,&diff);
 			nanosleep(&diff,NULL);
 		    addTime(start,cycle,&start);
@@ -185,29 +204,27 @@ void * task2 ()
 
     while(isPlay == 1){
     	char c = getchar( );
-    	if (0 != strcmp(c, stop)){
+    	if (c == stop){
     		isPlay = 0;
-    		change = 1;
     	}
     }
     while (isPlay == 0){
     	char c = getchar( );
-    	if (0 != strcmp(c, play)){
+    	if (c == play){
     		isPlay = 1;
-    		change = 1;
     	}
     }
-
-  }
   clock_gettime(CLOCK_REALTIME, &end);
   diffTime(cycle, diff, &diff);
-  if (0 >= compTime(cycle, diff)){
+  diff.tv_sec = diff.tv_sec % PERIOD_TASK_2_SEC;
+  /*if (0 >= compTime(cycle, diff)){
     printf("ERROR: lasted long than the cycle\n");
     exit(-1);
-  }
+  }*/
   diffTime(cycle, diff, &diff);
   nanosleep(&diff, NULL);
-  addime(start, cycle, &start);
+  addTime(start, cycle, &start);
+  }
 }
 
 /*****************************************************************************
@@ -217,30 +234,28 @@ void * task3 ()
 {
    struct timespec start,end,diff,cycle;
   // loading cycle time
-  cycle.tv_sec=PERIOD_TASK_2_SEC;
-  cycle.tv_nsec=PERIOD_TASK_2_NSEC;
+  cycle.tv_sec=PERIOD_TASK_3_SEC;
+  cycle.tv_nsec=PERIOD_TASK_3_NSEC;
 
   clock_gettime(CLOCK_REALTIME,&start);
 
   while(1){
-	  if(change == 1){
 		  if(isPlay == 0){
-			  printf("STOPPED");
+			  printf("Reproduction paused\n");
 		  } else if (isPlay == 1){
-			  printf("PLAY");
+			  printf("Reproduction resumed\n");
 		  }
-		  change = 0;
-	  }
-  }
     clock_gettime(CLOCK_REALTIME, &end);
     diffTime(cycle, diff, &diff);
-    if (0 >= compTime(cycle, diff)){
+    diff.tv_sec = diff.tv_sec % PERIOD_TASK_3_SEC;
+    /*if (0 >= compTime(cycle, diff)){
       printf("ERROR: lasted long than the cycle\n");
       exit(-1);
-    }
+    }*/
     diffTime(cycle, diff, &diff);
     nanosleep(&diff, NULL);
-    addime(start, cycle, &start);
+    addTime(start, cycle, &start);
+  }
 }
 
 
@@ -250,8 +265,6 @@ void * task3 ()
  *****************************************************************************/
 rtems_task Init (rtems_task_argument ignored)
 {
-    struct timespec start,end,diff,cycle;
-
 	printf("Populating Root file system from TAR file.\n");
 	Untar_FromMemory((unsigned char *)(&TARFILE_START),
 					 (unsigned long)&TARFILE_SIZE);
@@ -291,7 +304,7 @@ rtems_task Init (rtems_task_argument ignored)
 
 	/* Open music file */
 	printf("open file %s begin\n",FILE_NAME);
-	fd_file = open (FILE_NAME, O_RDWR);
+	fd_file = open (FILE_NAME, O_RDONLY);
 	if (fd_file < 0) {
 		perror("open: error opening file \n");
 		exit(-1);
@@ -299,13 +312,62 @@ rtems_task Init (rtems_task_argument ignored)
 
 	pthread_t task_1, task_2, task_3;
 
-	pthread_create(&task_1, NULL , task1, NULL);
-	pthread_create(&task_2, NULL, task2, NULL);
+	/*
 
-	pthread_setschedparam(task_1, SCHED_FIFO, 20);
-	pthread_setschedparam(task_2, SCHED_FIFO, 10);
+	param_1.sched_priority = 2;
+	param_2.sched_priority = 1;
+
+	pthread_create(&task_1, NULL, task1, NULL);
+	pthread_create(&task_2, NULL, task2, NULL);
+	//pthread_create(&task_3, NULL, task3, NULL);
+
+	pthread_setschedparam(task_1, SCHED_FIFO, &param_1);
+	pthread_setschedparam(task_2, SCHED_FIFO, &param_2);
+	 */
+
+	//THREAD 1
+
+	struct sched_param schedparam;
+	pthread_attr_t attr;
+
+	schedparam.sched_priority = 2;
+
+	pthread_attr_init(&attr);
+	pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED);
+	pthread_attr_setschedpolicy(&attr, SCHED_FIFO);
+	pthread_attr_setschedparam(&attr, &schedparam);
+
+	pthread_create(&task_1, &attr, task1, NULL);
+	pthread_attr_destroy(&attr);
+
+
+	//THREAD 2
+
+	schedparam.sched_priority = 3;
+
+	pthread_attr_init(&attr);
+	pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED);
+	pthread_attr_setschedpolicy(&attr, SCHED_FIFO);
+	pthread_attr_setschedparam(&attr, &schedparam);
+
+	pthread_create(&task_2, &attr, task2, NULL);
+	pthread_attr_destroy(&attr);
+
+
+	//THREAD 3
+
+	schedparam.sched_priority = 1;
+
+	pthread_attr_init(&attr);
+	pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED);
+	pthread_attr_setschedpolicy(&attr, SCHED_FIFO);
+	pthread_attr_setschedparam(&attr, &schedparam);
+
+	pthread_create(&task_3, &attr, task3, NULL);
+	pthread_attr_destroy(&attr);
 
 	while (1) {
+		pthread_join(task_3, NULL);
 		pthread_join(task_1, NULL);
 		pthread_join(task_2, NULL);
 	}
