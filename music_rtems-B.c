@@ -27,10 +27,10 @@
 #else
 #define DEV_NAME "/dev/com1"
 #endif
-#define FILE_NAME "/let_it_be_1bit.raw"
+#define FILE_NAME "/let_it_be.raw"
 
 #define PERIOD_TASK_1_SEC	0			/* Period of Task 1*/
-#define PERIOD_TASK_1_NSEC  256000000	/* Period of Task 1*/
+#define PERIOD_TASK_1_NSEC  32000000	/* Period of Task 1*/
 
 #define PERIOD_TASK_2_SEC	2			/* Period of Task 2*/
 #define PERIOD_TASK_2_NSEC  0			/* Period of Task 2*/
@@ -38,7 +38,7 @@
 #define PERIOD_TASK_3_SEC	5			/* Period of Task 2*/
 #define PERIOD_TASK_3_NSEC  0			/* Period of Task 2*/
 
-#define SEND_SIZE 256    			/* BYTES */
+#define SEND_SIZE 128    			/* BYTES */
 
 #define TARFILE_START _binary_tarfile_start
 #define TARFILE_SIZE  _binary_tarfile_size
@@ -315,6 +315,21 @@ rtems_task Init (rtems_task_argument ignored)
 	}
 
 	pthread_t task_1, task_2, task_3;
+
+	/*
+
+	param_1.sched_priority = 2;
+	param_2.sched_priority = 1;
+
+	pthread_create(&task_1, NULL, task1, NULL);
+	pthread_create(&task_2, NULL, task2, NULL);
+	//pthread_create(&task_3, NULL, task3, NULL);
+
+	pthread_setschedparam(task_1, SCHED_FIFO, &param_1);
+	pthread_setschedparam(task_2, SCHED_FIFO, &param_2);
+	 */
+
+	//THREAD 1
 
 	struct sched_param schedparam;
 	pthread_attr_t attr;
