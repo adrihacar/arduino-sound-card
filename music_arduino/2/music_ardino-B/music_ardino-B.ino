@@ -95,15 +95,26 @@ void setup ()
     timeOrig = micros();
 
     //Timer 2
-    OCR2A = 0;
+    TCCR2A = 0;
+    TCCR2B = 0;
+    TCNT2 = 0;
 
     TCCR2A = _BV(WGM21) | _BV(WGM20) | _BV(COM2A1);
-    TCCR2B = _BV(CS20); 
-    TIMSK2 = _BV(OCIE2A);
-
+    TCCR2B = _BV(CS20);
+    
     //Timer 1
-    TCCR1A = 0;
-    TCCR1B = _BV(WGM12) | _BV(CS12) | _BV(CS10);
+    TCCR1A = 0;// set entire TCCR1A register to 0 
+    TCCR1B = 0;// same for TCCR1B
+    TCNT1  = 0;//initialize counter value to 0;
+    // set timer count for khz increments
+    OCR1A = 499;// = (16*10^6) / (4000*8) - 1
+    // turn on CTC mode
+    //TCCR1B |= (1 << WGM12);
+    // Set CS11 bit for 8 prescaler (there is a table)
+    //TCCR1B |= (1 << CS11); 
+    TCCR1B = _BV(WGM12) | _BV(CS11);
+    // enable timer compare interrupt
+    // TIMSK1 |= (1 << OCIE1A);
     TIMSK1 = _BV(OCIE1A);
 }
 
