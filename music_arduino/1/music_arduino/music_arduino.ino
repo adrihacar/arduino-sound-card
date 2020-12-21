@@ -26,6 +26,8 @@ unsigned long timeOrig;
 int playback = 1;
 int pushed = 0;
 
+
+
 /**********************************************************
  * Function: receiveEvent
  *********************************************************/
@@ -93,22 +95,32 @@ void setup ()
     pinMode(SOUND_PIN, OUTPUT);
     memset (buffer, 0, BUF_SIZE);
     timeOrig = micros();
-
-    TCNT1  = 0;
-    TCCR1A = 01;
-    TCCR1B = _BV(WGM12) | _BV(CS11) | _BV(CS10);
+    
+    TCCR1A = 0;// set entire TCCR1A register to 0 
+    TCCR1B = 0;// same for TCCR1B
+    TCNT1  = 0;//initialize counter value to 0;
+    // set timer count for khz increments
+    OCR1A = 499;// = (16*10^6) / (4000*8) - 1
+    // turn on CTC mode
+    //TCCR1B |= (1 << WGM12);
+    // Set CS11 bit for 8 prescaler (there is a table)
+    //TCCR1B |= (1 << CS11); 
+    TCCR1B = _BV(WGM12) | _BV(CS11);
+    // enable timer compare interrupt
+    // TIMSK1 |= (1 << OCIE1A);
     TIMSK1 = _BV(OCIE1A);
+
 }
 
 /**********************************************************
  * Function: play_bit
  *********************************************************/
+
 ISR (TIMER1_COMPA_vect)
-{
+{  
   static int bitwise = 1;
   static unsigned char data = 0;
   static int music_count = 0;
-  
   bitwise = (bitwise * 2);
   if (bitwise > 128) {
       bitwise = 1;
