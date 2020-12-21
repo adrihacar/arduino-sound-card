@@ -129,7 +129,7 @@ void * task1 ()
 	clock_gettime(CLOCK_REALTIME,&start);
 	while (1) {
 
-		if(ret < 256){
+		if(ret < 128){
 			fd_file = open (FILE_NAME, O_RDONLY);
 			if (fd_file < 0) {
 				perror("open: error opening file \n");
