@@ -109,12 +109,9 @@ void setup ()
     // set timer count for khz increments
     OCR1A = 499;// = (16*10^6) / (4000*8) - 1
     // turn on CTC mode
-    //TCCR1B |= (1 << WGM12);
     // Set CS11 bit for 8 prescaler (there is a table)
-    //TCCR1B |= (1 << CS11); 
     TCCR1B = _BV(WGM12) | _BV(CS11);
     // enable timer compare interrupt
-    // TIMSK1 |= (1 << OCIE1A);
     TIMSK1 = _BV(OCIE1A);
 }
 
