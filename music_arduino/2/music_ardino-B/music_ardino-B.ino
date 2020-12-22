@@ -13,7 +13,7 @@
 
 #define SLAVE_ADDR 0x8
 
-#define SAMPLE_TIME 250 
+#define CYCLE_TIME 250 
 #define SOUND_PIN  11
 #define BUF_SIZE 256
 
@@ -148,7 +148,7 @@ void loop ()
     isMute();
     turnOnLed();
 
-    timeDiff = SAMPLE_TIME - (micros() - timeOrig);
-    timeOrig = timeOrig + SAMPLE_TIME;
+    timeDiff = CYCLE_TIME - (micros() - timeOrig);
+    timeOrig = timeOrig + CYCLE_TIME;
     delayMicroseconds(timeDiff);
 }
