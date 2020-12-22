@@ -33,11 +33,13 @@ int pushed = 0;
  *********************************************************/
 void receiveEvent(int num)
 {
+    double start = micros();
    static int count = BUF_SIZE/2;
    for (int j=0; j<num; j++) {
       buffer[count] = Wire.read();
       count = (count + 1) % BUF_SIZE;
    }
+  double endLoop = micros();
 }
 
 // --------------------------------------
@@ -53,7 +55,6 @@ void requestEvent()
  * Function: check if we have to mute 
  *********************************************************/
 int isMute(){
-
   int value = 0;
   value = digitalRead(7); 
   if(value == 1 && pushed == 0) {
@@ -102,12 +103,9 @@ void setup ()
     // set timer count for khz increments
     OCR1A = 499;// = (16*10^6) / (4000*8) - 1
     // turn on CTC mode
-    //TCCR1B |= (1 << WGM12);
-    // Set CS11 bit for 8 prescaler (there is a table)
-    //TCCR1B |= (1 << CS11); 
+    // Set CS11 bit for 8 prescaler (there is a table) 
     TCCR1B = _BV(WGM12) | _BV(CS11);
     // enable timer compare interrupt
-    // TIMSK1 |= (1 << OCIE1A);
     TIMSK1 = _BV(OCIE1A);
 
 }
@@ -118,6 +116,7 @@ void setup ()
 
 ISR (TIMER1_COMPA_vect)
 {  
+  double start = micros();
   static int bitwise = 1;
   static unsigned char data = 0;
   static int music_count = 0;
@@ -135,6 +134,7 @@ ISR (TIMER1_COMPA_vect)
   if(playback == 1){
     digitalWrite(SOUND_PIN, (data & bitwise) );
   }
+  double endLoop = micros();
 }
 
 /**********************************************************
