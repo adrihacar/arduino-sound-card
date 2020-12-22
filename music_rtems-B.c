@@ -141,7 +141,6 @@ void * task1 ()
 		//printf("read %s file\n",FILE_NAME);
 		if(isPlay == 1){
 			ret=read(fd_file,buf,SEND_SIZE);
-			printf("READ: %d\n",ret);
 		}
 
 			if (ret < 0) {
@@ -167,7 +166,6 @@ void * task1 ()
 			} else {
 				ret=write(fd_serie,zeros_buf,SEND_SIZE);
 			}
-			printf("WRITE: %d\n",ret);
 			if (ret < 0) {
 				printf("write: error writting serial\n");
 				exit(-1);
